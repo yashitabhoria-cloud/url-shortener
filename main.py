@@ -1,15 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse
 
 from schemas import ShortenRequest, ShortenResponse
-from storage import InMemoryURLRepository
+from sqlite_storage import SQLiteURLRepository
 from services import URLShortenerService
+from database import init_db
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
 
 
-repository = InMemoryURLRepository()
+app = FastAPI(lifespan=lifespan)
+
+
+repository = SQLiteURLRepository()
 service = URLShortenerService(repository)
 
 
