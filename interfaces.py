@@ -32,3 +32,7 @@ class URLRepository(ABC):
     @abstractmethod
     def delete(self, short_code: str) -> bool:
         pass
+
+    @abstractmethod
+    def update_original_url(self, short_code: str, original_url: str) -> bool:
+        pass

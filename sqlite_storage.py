@@ -21,7 +21,7 @@ class SQLiteURLRepository(URLRepository):
 
         cursor.execute(
             """
-            INSERT INTO urls (short_code, original_url, clicks, created_at, expires_at)
+            INSERT INTO urls (short_code, original_url, click_count, created_at, expires_at)
             VALUES (?, ?, ?, ?, ?)
             """,
             (short_code, original_url, 0, created_at, expires_at),
@@ -76,7 +76,7 @@ class SQLiteURLRepository(URLRepository):
         cursor.execute(
             """
             UPDATE urls
-            SET clicks = clicks + 1
+            SET click_count = click_count + 1
             WHERE short_code = ?
             """,
             (short_code,),
@@ -91,7 +91,7 @@ class SQLiteURLRepository(URLRepository):
 
         cursor.execute(
             """
-            SELECT short_code, original_url, clicks, created_at, expires_at
+            SELECT short_code, original_url, click_count, created_at, expires_at
             FROM urls
             WHERE short_code = ?
             """,
@@ -118,6 +118,23 @@ class SQLiteURLRepository(URLRepository):
             cursor.execute(
                 "DELETE FROM urls WHERE short_code = ?",
                 (short_code,),
+            )
+
+            connection.commit()
+
+            return cursor.rowcount > 0
+        
+    def update_original_url(self, short_code: str, original_url: str) -> bool:
+        with sqlite3.connect(self.database_name) as connection:
+            cursor = connection.cursor()
+
+            cursor.execute(
+                """
+                UPDATE urls
+                SET original_url = ?
+                WHERE short_code = ?
+                """,
+                (original_url, short_code),
             )
 
             connection.commit()

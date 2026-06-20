@@ -55,3 +55,10 @@ class InMemoryURLRepository(URLRepository):
 
         del self.urls[short_code]
         return True
+    
+    def update_original_url(self, short_code: str, original_url: str) -> bool:
+        if short_code not in self.urls:
+            return False
+
+        self.urls[short_code]["original_url"] = original_url
+        return True

@@ -123,3 +123,9 @@ class URLShortenerService:
 
         if not was_deleted:
             raise ShortCodeNotFoundError()
+        
+    def update_original_url(self, short_code: str, original_url: str) -> None:
+        was_updated = self.repository.update_original_url(short_code, original_url)
+
+        if not was_updated:
+            raise ShortCodeNotFoundError()

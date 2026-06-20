@@ -123,3 +123,22 @@ def test_delete_missing_short_url_raises_error():
 
     with pytest.raises(ShortCodeNotFoundError):
         service.delete_short_url("doesnotexist")
+
+def test_update_original_url_success():
+    repository = InMemoryURLRepository()
+    service = URLShortenerService(repository)
+
+    short_code = service.create_short_url("https://google.com")
+
+    service.update_original_url(short_code, "https://youtube.com")
+
+    result = service.get_original_url(short_code)
+
+    assert result == "https://youtube.com"
+
+def test_update_missing_short_url_raises_error():
+    repository = InMemoryURLRepository()
+    service = URLShortenerService(repository)
+
+    with pytest.raises(ShortCodeNotFoundError):
+        service.update_original_url("doesnotexist", "https://youtube.com")

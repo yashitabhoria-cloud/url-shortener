@@ -241,3 +241,47 @@ def test_stats_for_deleted_short_url_returns_404():
     stats_response = client.get(f"/stats/{short_code}")
 
     assert stats_response.status_code == 404
+
+def test_update_existing_short_url():
+    create_response = client.post(
+        "/shorten",
+        json={"url": "https://google.com"},
+    )
+
+    short_code = create_response.json()["short_code"]
+
+    update_response = client.patch(
+        f"/{short_code}",
+        json={"url": "https://youtube.com"},
+    )
+
+    assert update_response.status_code == 204
+
+    redirect_response = client.get(f"/{short_code}", follow_redirects=False)
+
+    assert redirect_response.status_code == 307
+    assert redirect_response.headers["location"] == "https://youtube.com/"
+
+def test_update_missing_short_url_returns_404():
+    response = client.patch(
+        "/doesnotexist",
+        json={"url": "https://youtube.com"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Short code not found"
+
+def test_update_short_url_with_invalid_url_returns_422():
+    create_response = client.post(
+        "/shorten",
+        json={"url": "https://google.com"},
+    )
+
+    short_code = create_response.json()["short_code"]
+
+    response = client.patch(
+        f"/{short_code}",
+        json={"url": "not-a-valid-url"},
+    )
+
+    assert response.status_code == 422

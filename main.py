@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse
 
-from schemas import ShortenRequest, ShortenResponse, URLStatsResponse
+from schemas import ShortenRequest, ShortenResponse, URLStatsResponse, UpdateURLRequest
 from sqlite_storage import SQLiteURLRepository
 from services import (
     URLShortenerService,
@@ -79,6 +79,16 @@ def get_url_stats(
 
     return stats
 
+@app.patch("/{short_code}", status_code=204)
+def update_short_url(
+    short_code: str,
+    request_data: UpdateURLRequest,
+    url_service: URLShortenerService = Depends(get_url_shortener_service),
+):
+    try:
+        url_service.update_original_url(short_code, str(request_data.url))
+    except ShortCodeNotFoundError:
+        raise HTTPException(status_code=404, detail="Short code not found")
 
 @app.get("/{short_code}")
 def redirect_to_original_url(
@@ -110,3 +120,4 @@ def delete_short_url(
         url_service.delete_short_url(short_code)
     except ShortCodeNotFoundError:
         raise HTTPException(status_code=404, detail="Short code not found")
+    

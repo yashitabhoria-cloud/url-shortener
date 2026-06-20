@@ -9,6 +9,8 @@ class ShortenRequest(BaseModel):
     custom_code: Optional[str] = None
     expires_at: Optional[datetime] = None
 
+class UpdateURLRequest(BaseModel):
+    url: HttpUrl
 
 class ShortenResponse(BaseModel):
     short_url: str
