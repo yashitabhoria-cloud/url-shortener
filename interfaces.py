@@ -28,3 +28,7 @@ class URLRepository(ABC):
     @abstractmethod
     def get_url_stats(self, short_code: str) -> Optional[dict]:
         pass
+
+    @abstractmethod
+    def delete(self, short_code: str) -> bool:
+        pass

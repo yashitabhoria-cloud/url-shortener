@@ -8,6 +8,8 @@ from utils import generate_short_code, is_valid_custom_code
 class InvalidShortCodeError(Exception):
     pass
 
+class ShortCodeNotFoundError(Exception):
+    pass
 
 class ShortCodeAlreadyExistsError(Exception):
     pass
@@ -115,3 +117,9 @@ class URLShortenerService:
             value = value.replace(tzinfo=timezone.utc)
 
         return value.astimezone(timezone.utc)
+    
+    def delete_short_url(self, short_code: str) -> None:
+        was_deleted = self.repository.delete(short_code)
+
+        if not was_deleted:
+            raise ShortCodeNotFoundError()

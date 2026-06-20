@@ -111,3 +111,15 @@ class SQLiteURLRepository(URLRepository):
             "created_at": row[3],
             "expires_at": row[4],
         }
+    def delete(self, short_code: str) -> bool:
+        with sqlite3.connect(self.database_name) as connection:
+            cursor = connection.cursor()
+
+            cursor.execute(
+                "DELETE FROM urls WHERE short_code = ?",
+                (short_code,),
+            )
+
+            connection.commit()
+
+            return cursor.rowcount > 0

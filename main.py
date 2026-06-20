@@ -9,6 +9,7 @@ from services import (
     ShortCodeAlreadyExistsError,
     InvalidExpirationError,
     ExpiredShortCodeError,
+    ShortCodeNotFoundError,
 )
 from database import initialize_database
 
@@ -99,3 +100,13 @@ def redirect_to_original_url(
         )
 
     return RedirectResponse(original_url)
+
+@app.delete("/{short_code}", status_code=204)
+def delete_short_url(
+    short_code: str,
+    url_service: URLShortenerService = Depends(get_url_shortener_service),
+):
+    try:
+        url_service.delete_short_url(short_code)
+    except ShortCodeNotFoundError:
+        raise HTTPException(status_code=404, detail="Short code not found")

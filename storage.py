@@ -49,3 +49,9 @@ class InMemoryURLRepository(URLRepository):
             "created_at": url_data["created_at"],
             "expires_at": url_data["expires_at"],
         }
+    def delete(self, short_code: str) -> bool:
+        if short_code not in self.urls:
+            return False
+
+        del self.urls[short_code]
+        return True

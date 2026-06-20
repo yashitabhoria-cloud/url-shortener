@@ -6,6 +6,7 @@ import pytest
 from services import ExpiredShortCodeError, InvalidExpirationError
 from storage import InMemoryURLRepository
 from services import URLShortenerService
+from services import ShortCodeNotFoundError
 
 def test_create_short_url_returns_code():
     repository = InMemoryURLRepository()
@@ -115,3 +116,10 @@ def test_expired_short_url_cannot_redirect():
 
     with pytest.raises(ExpiredShortCodeError):
         service.get_original_url("expired123")
+
+def test_delete_missing_short_url_raises_error():
+    repository = InMemoryURLRepository()
+    service = URLShortenerService(repository)
+
+    with pytest.raises(ShortCodeNotFoundError):
+        service.delete_short_url("doesnotexist")

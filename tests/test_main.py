@@ -203,3 +203,41 @@ def test_stats_include_expiration_fields():
 
     assert data["expires_at"] is not None
     assert data["is_expired"] is False
+
+def test_delete_existing_short_url():
+    create_response = client.post(
+        "/shorten",
+        json={"url": "https://example.com"},
+    )
+
+    short_code = create_response.json()["short_code"]
+
+    delete_response = client.delete(f"/{short_code}")
+
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/{short_code}")
+
+    assert get_response.status_code == 404
+
+
+def test_delete_missing_short_url_returns_404():
+    response = client.delete("/doesnotexist")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Short code not found"
+
+
+def test_stats_for_deleted_short_url_returns_404():
+    create_response = client.post(
+        "/shorten",
+        json={"url": "https://example.com"},
+    )
+
+    short_code = create_response.json()["short_code"]
+
+    client.delete(f"/{short_code}")
+
+    stats_response = client.get(f"/stats/{short_code}")
+
+    assert stats_response.status_code == 404
