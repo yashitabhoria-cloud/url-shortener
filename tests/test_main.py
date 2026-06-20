@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from main import app, get_url_shortener_service
 from services import URLShortenerService
 from storage import InMemoryURLRepository
-
+from datetime import datetime, timedelta, timezone
 
 test_repository = InMemoryURLRepository()
 test_service = URLShortenerService(test_repository)
@@ -146,3 +146,60 @@ def test_invalid_custom_short_code_fails():
     )
 
     assert response.status_code == 400
+
+def test_shorten_url_with_expiration():
+    future_time = datetime.now(timezone.utc) + timedelta(days=1)
+
+    response = client.post(
+        "/shorten",
+        json={
+            "url": "https://example.com",
+            "expires_at": future_time.isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["short_code"] is not None
+    assert data["short_url"] is not None
+    assert data["expires_at"] is not None
+
+
+def test_shorten_url_with_past_expiration_returns_400():
+    past_time = datetime.now(timezone.utc) - timedelta(days=1)
+
+    response = client.post(
+        "/shorten",
+        json={
+            "url": "https://example.com",
+            "expires_at": past_time.isoformat(),
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Expiration time must be in the future"
+
+
+def test_stats_include_expiration_fields():
+    future_time = datetime.now(timezone.utc) + timedelta(days=1)
+
+    create_response = client.post(
+        "/shorten",
+        json={
+            "url": "https://example.com",
+            "expires_at": future_time.isoformat(),
+        },
+    )
+
+    short_code = create_response.json()["short_code"]
+
+    stats_response = client.get(f"/stats/{short_code}")
+
+    assert stats_response.status_code == 200
+
+    data = stats_response.json()
+
+    assert data["expires_at"] is not None
+    assert data["is_expired"] is False

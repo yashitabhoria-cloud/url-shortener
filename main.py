@@ -7,6 +7,8 @@ from services import (
     URLShortenerService,
     InvalidShortCodeError,
     ShortCodeAlreadyExistsError,
+    InvalidExpirationError,
+    ExpiredShortCodeError,
 )
 from database import initialize_database
 
@@ -34,17 +36,30 @@ def shorten_url(
         short_code = url_service.create_short_url(
             str(request_data.url),
             request_data.custom_code,
+            request_data.expires_at,
         )
-    except InvalidShortCodeError as error:
-        raise HTTPException(status_code=400, detail=str(error))
-    except ShortCodeAlreadyExistsError as error:
-        raise HTTPException(status_code=409, detail=str(error))
+    except InvalidShortCodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid custom short code",
+        )
+    except ShortCodeAlreadyExistsError:
+        raise HTTPException(
+            status_code=409,
+            detail="Custom short code already exists",
+        )
+    except InvalidExpirationError:
+        raise HTTPException(
+            status_code=400,
+            detail="Expiration time must be in the future",
+        )
 
     short_url = str(request.base_url) + short_code
 
     return ShortenResponse(
         short_url=short_url,
         short_code=short_code,
+        expires_at=request_data.expires_at,
     )
 
 
@@ -53,24 +68,34 @@ def get_url_stats(
     short_code: str,
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
-    stats = url_service.get_stats(short_code)
+    stats = url_service.get_url_stats(short_code)
 
     if stats is None:
-        raise HTTPException(status_code=404, detail="Short URL not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Short URL not found",
+        )
 
     return stats
 
 
 @app.get("/{short_code}")
-def redirect_to_url(
+def redirect_to_original_url(
     short_code: str,
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
-    original_url = url_service.get_original_url(short_code)
+    try:
+        original_url = url_service.get_original_url(short_code)
+    except ExpiredShortCodeError:
+        raise HTTPException(
+            status_code=410,
+            detail="Short URL has expired",
+        )
 
     if original_url is None:
-        raise HTTPException(status_code=404, detail="Short URL not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Short URL not found",
+        )
 
-    url_service.record_click(short_code)
-
-    return RedirectResponse(url=original_url)
+    return RedirectResponse(original_url)

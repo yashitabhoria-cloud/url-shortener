@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from interfaces import URLRepository
 
@@ -8,14 +7,21 @@ class InMemoryURLRepository(URLRepository):
     def __init__(self):
         self.urls = {}
 
-    def save_url(self, short_code: str, original_url: str) -> None:
+    def save_url(
+        self,
+        short_code: str,
+        original_url: str,
+        created_at: str,
+        expires_at: Optional[str] = None,
+    ) -> None:
         self.urls[short_code] = {
             "original_url": original_url,
-            "click_count": 0,
-            "created_at": datetime.utcnow().isoformat()
+            "clicks": 0,
+            "created_at": created_at,
+            "expires_at": expires_at,
         }
 
-    def get_url(self, short_code: str) -> Optional[str]:
+    def get_original_url(self, short_code: str) -> Optional[str]:
         url_data = self.urls.get(short_code)
 
         if url_data is None:
@@ -23,11 +29,14 @@ class InMemoryURLRepository(URLRepository):
 
         return url_data["original_url"]
 
-    def increment_click_count(self, short_code: str) -> None:
-        if short_code in self.urls:
-            self.urls[short_code]["click_count"] += 1
+    def short_code_exists(self, short_code: str) -> bool:
+        return short_code in self.urls
 
-    def get_url_stats(self, short_code: str) -> Optional[Dict[str, Any]]:
+    def increment_clicks(self, short_code: str) -> None:
+        if short_code in self.urls:
+            self.urls[short_code]["clicks"] += 1
+
+    def get_url_stats(self, short_code: str) -> Optional[dict]:
         url_data = self.urls.get(short_code)
 
         if url_data is None:
@@ -36,6 +45,7 @@ class InMemoryURLRepository(URLRepository):
         return {
             "short_code": short_code,
             "original_url": url_data["original_url"],
-            "click_count": url_data["click_count"],
-            "created_at": url_data["created_at"]
+            "click_count": url_data["clicks"],
+            "created_at": url_data["created_at"],
+            "expires_at": url_data["expires_at"],
         }
