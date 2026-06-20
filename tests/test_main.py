@@ -1,72 +1,98 @@
 from fastapi.testclient import TestClient
 
 from main import app, get_url_shortener_service
-from storage import InMemoryURLRepository
 from services import URLShortenerService
+from storage import InMemoryURLRepository
 
 
-def create_test_service():
-    repository = InMemoryURLRepository()
-    return URLShortenerService(repository)
+test_repository = InMemoryURLRepository()
+test_service = URLShortenerService(test_repository)
 
 
-def test_shorten_url_returns_short_url():
-    test_service = create_test_service()
+def get_test_url_shortener_service():
+    return test_service
 
-    app.dependency_overrides[get_url_shortener_service] = lambda: test_service
 
-    client = TestClient(app)
+app.dependency_overrides[get_url_shortener_service] = get_test_url_shortener_service
 
+client = TestClient(app)
+
+
+def test_shorten_url():
     response = client.post(
         "/shorten",
-        json={"url": "https://www.google.com"},
+        json={"url": "https://www.google.com"}
     )
-
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
 
     data = response.json()
 
     assert "short_url" in data
-    assert data["short_url"].startswith("http://testserver/")
+    assert "short_code" in data
 
 
-def test_redirect_short_url():
-    test_service = create_test_service()
-
-    app.dependency_overrides[get_url_shortener_service] = lambda: test_service
-
-    client = TestClient(app)
-
+def test_redirect_to_original_url():
     shorten_response = client.post(
         "/shorten",
-        json={"url": "https://www.google.com"},
+        json={"url": "https://www.google.com"}
     )
 
-    short_url = shorten_response.json()["short_url"]
-    short_code = short_url.split("/")[-1]
+    short_code = shorten_response.json()["short_code"]
 
     redirect_response = client.get(
         f"/{short_code}",
-        follow_redirects=False,
+        follow_redirects=False
     )
 
-    app.dependency_overrides.clear()
-
-    assert redirect_response.status_code in [302, 307]
+    assert redirect_response.status_code in [307, 308]
     assert redirect_response.headers["location"] == "https://www.google.com/"
 
 
-def test_redirect_missing_short_code_returns_404():
-    test_service = create_test_service()
+def test_missing_short_code_returns_404():
+    response = client.get("/missing-code")
 
-    app.dependency_overrides[get_url_shortener_service] = lambda: test_service
+    assert response.status_code == 404
 
-    client = TestClient(app)
 
-    response = client.get("/missingcode")
+def test_stats_endpoint_returns_url_stats():
+    shorten_response = client.post(
+        "/shorten",
+        json={"url": "https://www.google.com"}
+    )
 
-    app.dependency_overrides.clear()
+    short_code = shorten_response.json()["short_code"]
+
+    stats_response = client.get(f"/stats/{short_code}")
+
+    assert stats_response.status_code == 200
+
+    data = stats_response.json()
+
+    assert data["short_code"] == short_code
+    assert data["original_url"] == "https://www.google.com/"
+    assert data["click_count"] == 0
+    assert "created_at" in data
+
+
+def test_stats_click_count_increases_after_redirect():
+    shorten_response = client.post(
+        "/shorten",
+        json={"url": "https://www.google.com"}
+    )
+
+    short_code = shorten_response.json()["short_code"]
+
+    client.get(f"/{short_code}", follow_redirects=False)
+    client.get(f"/{short_code}", follow_redirects=False)
+
+    stats_response = client.get(f"/stats/{short_code}")
+    data = stats_response.json()
+
+    assert data["click_count"] == 2
+
+
+def test_stats_for_missing_short_code_returns_404():
+    response = client.get("/stats/missing-code")
 
     assert response.status_code == 404

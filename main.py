@@ -1,22 +1,16 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse
 
-from schemas import ShortenRequest, ShortenResponse
+from schemas import ShortenRequest, ShortenResponse, URLStatsResponse
 from sqlite_storage import SQLiteURLRepository
 from services import URLShortenerService
-from database import init_db
+from database import initialize_database
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_db()
-    yield
+app = FastAPI()
 
 
-app = FastAPI(lifespan=lifespan)
-
+initialize_database()
 
 repository = SQLiteURLRepository()
 service = URLShortenerService(repository)
@@ -34,16 +28,29 @@ def shorten_url(
 ):
     short_code = url_service.create_short_url(str(request_data.url))
 
-    short_url = f"{request.base_url}{short_code}"
+    short_url = str(request.base_url) + short_code
 
     return ShortenResponse(
-        short_code=short_code,
         short_url=short_url,
+        short_code=short_code
     )
 
 
+@app.get("/stats/{short_code}", response_model=URLStatsResponse)
+def get_url_stats(
+    short_code: str,
+    url_service: URLShortenerService = Depends(get_url_shortener_service),
+):
+    stats = url_service.get_stats(short_code)
+
+    if stats is None:
+        raise HTTPException(status_code=404, detail="Short URL not found")
+
+    return stats
+
+
 @app.get("/{short_code}")
-def redirect_to_original_url(
+def redirect_to_url(
     short_code: str,
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
@@ -51,5 +58,7 @@ def redirect_to_original_url(
 
     if original_url is None:
         raise HTTPException(status_code=404, detail="Short URL not found")
+
+    url_service.record_click(short_code)
 
     return RedirectResponse(url=original_url)

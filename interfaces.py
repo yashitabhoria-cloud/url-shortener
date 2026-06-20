@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional, Dict, Any
 
 
 class URLRepository(ABC):
@@ -7,9 +8,13 @@ class URLRepository(ABC):
         pass
 
     @abstractmethod
-    def get_url(self, short_code: str) -> str | None:
+    def get_url(self, short_code: str) -> Optional[str]:
         pass
 
     @abstractmethod
-    def short_code_exists(self, short_code: str) -> bool:
+    def increment_click_count(self, short_code: str) -> None:
+        pass
+
+    @abstractmethod
+    def get_url_stats(self, short_code: str) -> Optional[Dict[str, Any]]:
         pass

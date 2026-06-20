@@ -6,5 +6,12 @@ class ShortenRequest(BaseModel):
 
 
 class ShortenResponse(BaseModel):
-    short_code: str
     short_url: str
+    short_code: str
+
+
+class URLStatsResponse(BaseModel):
+    short_code: str
+    original_url: str
+    click_count: int
+    created_at: str

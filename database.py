@@ -1,38 +1,27 @@
 import sqlite3
-from pathlib import Path
 
 
-DATABASE_PATH = Path("urls.db")
+DATABASE_NAME = "urls.db"
 
 
 def get_connection():
-    """
-    Opens a connection to the SQLite database file.
-
-    If urls.db does not exist yet, SQLite will create it.
-    """
-    connection = sqlite3.connect(DATABASE_PATH)
-    connection.row_factory = sqlite3.Row
-    return connection
+    return sqlite3.connect(DATABASE_NAME)
 
 
-def init_db():
-    """
-    Creates the database table if it does not already exist.
-    """
+def initialize_database():
     connection = get_connection()
+    cursor = connection.cursor()
 
-    try:
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS urls (
-                short_code TEXT PRIMARY KEY,
-                original_url TEXT NOT NULL
-            )
-            """
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS urls (
+            short_code TEXT PRIMARY KEY,
+            original_url TEXT NOT NULL,
+            click_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
         )
+        """
+    )
 
-        connection.commit()
-
-    finally:
-        connection.close()
+    connection.commit()
+    connection.close()
