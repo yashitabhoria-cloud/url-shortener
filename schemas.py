@@ -1,8 +1,9 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, Field
 
 
 class ShortenRequest(BaseModel):
     url: HttpUrl
+    custom_code: str | None = Field(default=None, min_length=3, max_length=30)
 
 
 class ShortenResponse(BaseModel):

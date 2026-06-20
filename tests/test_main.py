@@ -96,3 +96,53 @@ def test_stats_for_missing_short_code_returns_404():
     response = client.get("/stats/missing-code")
 
     assert response.status_code == 404
+
+def test_create_custom_short_code():
+    response = client.post(
+        "/shorten",
+        json={
+            "url": "https://example.com",
+            "custom_code": "example",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["short_code"] == "example"
+    assert data["short_url"].endswith("/example")
+
+
+def test_duplicate_custom_short_code_fails():
+    first_response = client.post(
+        "/shorten",
+        json={
+            "url": "https://example.com",
+            "custom_code": "duplicate",
+        },
+    )
+
+    assert first_response.status_code == 200
+
+    second_response = client.post(
+        "/shorten",
+        json={
+            "url": "https://google.com",
+            "custom_code": "duplicate",
+        },
+    )
+
+    assert second_response.status_code == 409
+
+
+def test_invalid_custom_short_code_fails():
+    response = client.post(
+        "/shorten",
+        json={
+            "url": "https://example.com",
+            "custom_code": "bad code",
+        },
+    )
+
+    assert response.status_code == 400

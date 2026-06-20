@@ -3,7 +3,11 @@ from fastapi.responses import RedirectResponse
 
 from schemas import ShortenRequest, ShortenResponse, URLStatsResponse
 from sqlite_storage import SQLiteURLRepository
-from services import URLShortenerService
+from services import (
+    URLShortenerService,
+    InvalidShortCodeError,
+    ShortCodeAlreadyExistsError,
+)
 from database import initialize_database
 
 
@@ -26,13 +30,21 @@ def shorten_url(
     request: Request,
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
-    short_code = url_service.create_short_url(str(request_data.url))
+    try:
+        short_code = url_service.create_short_url(
+            str(request_data.url),
+            request_data.custom_code,
+        )
+    except InvalidShortCodeError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    except ShortCodeAlreadyExistsError as error:
+        raise HTTPException(status_code=409, detail=str(error))
 
     short_url = str(request.base_url) + short_code
 
     return ShortenResponse(
         short_url=short_url,
-        short_code=short_code
+        short_code=short_code,
     )
 
 
