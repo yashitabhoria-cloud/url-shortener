@@ -129,3 +129,44 @@ class URLShortenerService:
 
         if not was_updated:
             raise ShortCodeNotFoundError()
+        
+    def list_urls(self, base_url: str, limit: int, offset: int) -> dict:
+        urls = self.repository.list_urls(limit, offset)
+        total = self.repository.count_urls()
+
+        items = []
+
+        for url_data in urls:
+            expires_at = url_data.get("expires_at")
+
+            is_expired = False
+
+            if expires_at is not None:
+                expires_at_datetime = expires_at
+
+                if isinstance(expires_at, str):
+                    expires_at_datetime = datetime.fromisoformat(expires_at)
+
+                if expires_at_datetime.tzinfo is None:
+                    expires_at_datetime = expires_at_datetime.replace(tzinfo=timezone.utc)
+
+                is_expired = expires_at_datetime <= datetime.now(timezone.utc)
+
+            short_code = url_data["short_code"]
+
+            items.append({
+                "short_code": short_code,
+                "original_url": url_data["original_url"],
+                "short_url": f"{base_url}{short_code}",
+                "click_count": url_data.get("click_count", 0),
+                "created_at": url_data["created_at"],
+                "expires_at": expires_at,
+                "is_expired": is_expired,
+            })
+
+        return {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }

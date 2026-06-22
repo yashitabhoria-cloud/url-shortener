@@ -36,3 +36,11 @@ class URLRepository(ABC):
     @abstractmethod
     def update_original_url(self, short_code: str, original_url: str) -> bool:
         pass
+
+    @abstractmethod
+    def list_urls(self, limit: int, offset: int) -> list[dict]:
+        pass
+
+    @abstractmethod
+    def count_urls(self) -> int:
+        pass

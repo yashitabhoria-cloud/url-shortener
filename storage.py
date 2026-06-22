@@ -62,3 +62,19 @@ class InMemoryURLRepository(URLRepository):
 
         self.urls[short_code]["original_url"] = original_url
         return True
+    
+    def list_urls(self, limit: int, offset: int) -> list[dict]:
+        all_urls = []
+
+        for short_code, url_data in self.urls.items():
+            all_urls.append({
+                "short_code": short_code,
+                **url_data,
+            })
+
+        all_urls.sort(key=lambda item: item["created_at"], reverse=True)
+
+        return all_urls[offset:offset + limit]
+
+    def count_urls(self) -> int:
+        return len(self.urls)

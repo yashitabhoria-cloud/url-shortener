@@ -25,3 +25,19 @@ class URLStatsResponse(BaseModel):
     created_at: datetime
     expires_at: Optional[datetime] = None
     is_expired: bool
+
+class URLListItemResponse(BaseModel):
+    short_code: str
+    original_url: str
+    short_url: str
+    click_count: int
+    created_at: datetime
+    expires_at: datetime | None = None
+    is_expired: bool
+
+
+class URLListResponse(BaseModel):
+    items: list[URLListItemResponse]
+    total: int
+    limit: int
+    offset: int

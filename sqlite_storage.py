@@ -140,3 +140,35 @@ class SQLiteURLRepository(URLRepository):
             connection.commit()
 
             return cursor.rowcount > 0
+        
+    def list_urls(self, limit: int, offset: int) -> list[dict]:
+        connection = sqlite3.connect(DATABASE_NAME)
+        connection.row_factory = sqlite3.Row
+
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT short_code, original_url, click_count, created_at, expires_at
+            FROM urls
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            (limit, offset),
+        )
+
+        rows = cursor.fetchall()
+        connection.close()
+
+        return [dict(row) for row in rows]
+
+    def count_urls(self) -> int:
+        connection = sqlite3.connect(DATABASE_NAME)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM urls")
+        total = cursor.fetchone()[0]
+
+        connection.close()
+
+        return total

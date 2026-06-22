@@ -285,3 +285,57 @@ def test_update_short_url_with_invalid_url_returns_422():
     )
 
     assert response.status_code == 422
+
+def test_list_urls_returns_created_urls(client):
+    client.post("/shorten", json={"url": "https://example.com"})
+    client.post("/shorten", json={"url": "https://google.com"})
+
+    response = client.get("/urls")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 2
+    assert data["limit"] == 10
+    assert data["offset"] == 0
+    assert len(data["items"]) == 2
+
+    first_item = data["items"][0]
+
+    assert "short_code" in first_item
+    assert "original_url" in first_item
+    assert "short_url" in first_item
+    assert "click_count" in first_item
+    assert "created_at" in first_item
+    assert "expires_at" in first_item
+    assert "is_expired" in first_item
+
+
+def test_list_urls_supports_pagination(client):
+    client.post("/shorten", json={"url": "https://example.com/1"})
+    client.post("/shorten", json={"url": "https://example.com/2"})
+    client.post("/shorten", json={"url": "https://example.com/3"})
+
+    response = client.get("/urls?limit=1&offset=1")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 3
+    assert data["limit"] == 1
+    assert data["offset"] == 1
+    assert len(data["items"]) == 1
+
+
+def test_list_urls_rejects_invalid_limit(client):
+    response = client.get("/urls?limit=0")
+
+    assert response.status_code == 422
+
+
+def test_list_urls_rejects_invalid_offset(client):
+    response = client.get("/urls?offset=-1")
+
+    assert response.status_code == 422
