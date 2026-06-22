@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from main import app, get_url_shortener_service
 from services import URLShortenerService
 from storage import InMemoryURLRepository
-
+from main import rate_limiter
 
 API_KEY_HEADERS = {"X-API-Key": "dev-secret-key"}
 
@@ -479,3 +479,23 @@ def test_protected_route_accepts_api_key_from_environment():
     data = response.json()
 
     assert "short_url" in data
+
+def test_rate_limit_blocks_too_many_requests():
+    rate_limiter.max_requests = 2
+    rate_limiter.window_seconds = 60
+    rate_limiter.reset()
+
+    try:
+        first_response = client.get("/urls", headers=API_KEY_HEADERS)
+        second_response = client.get("/urls", headers=API_KEY_HEADERS)
+        third_response = client.get("/urls", headers=API_KEY_HEADERS)
+
+        assert first_response.status_code == 200
+        assert second_response.status_code == 200
+        assert third_response.status_code == 429
+        assert third_response.json()["detail"] == "Rate limit exceeded"
+
+    finally:
+        rate_limiter.max_requests = 100
+        rate_limiter.window_seconds = 60
+        rate_limiter.reset()
