@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, Request, Depends, Query
+import os
+
+from fastapi import FastAPI, HTTPException, Request, Depends, Query, Header
 from fastapi.responses import RedirectResponse
 
 from schemas import ShortenRequest, ShortenResponse, URLStatsResponse, UpdateURLRequest, URLListResponse
@@ -15,6 +17,7 @@ from database import initialize_database
 
 
 app = FastAPI()
+API_KEY = os.getenv("API_KEY", "dev-secret-key")
 
 
 initialize_database()
@@ -26,11 +29,16 @@ service = URLShortenerService(repository)
 def get_url_shortener_service() -> URLShortenerService:
     return service
 
+def verify_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
 
 @app.post("/shorten", response_model=ShortenResponse)
 def shorten_url(
     request_data: ShortenRequest,
     request: Request,
+     _: None = Depends(verify_api_key),
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
     try:
@@ -67,6 +75,7 @@ def shorten_url(
 @app.get("/stats/{short_code}", response_model=URLStatsResponse)
 def get_url_stats(
     short_code: str,
+     _: None = Depends(verify_api_key),
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
     stats = url_service.get_url_stats(short_code)
@@ -83,6 +92,7 @@ def get_url_stats(
 def update_short_url(
     short_code: str,
     request_data: UpdateURLRequest,
+    _: None = Depends(verify_api_key),
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
     try:
@@ -95,6 +105,7 @@ def list_urls(
     request: Request,
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    _: None = Depends(verify_api_key),
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
     base_url = str(request.base_url)
@@ -129,6 +140,7 @@ def redirect_to_original_url(
 @app.delete("/{short_code}", status_code=204)
 def delete_short_url(
     short_code: str,
+    _: None = Depends(verify_api_key),
     url_service: URLShortenerService = Depends(get_url_shortener_service),
 ):
     try:
