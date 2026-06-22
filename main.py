@@ -1,8 +1,7 @@
-import os
-
 from fastapi import FastAPI, HTTPException, Request, Depends, Query, Header
 from fastapi.responses import RedirectResponse
 
+from config import API_KEY
 from schemas import ShortenRequest, ShortenResponse, URLStatsResponse, UpdateURLRequest, URLListResponse
 from sqlite_storage import SQLiteURLRepository
 from services import (
@@ -17,8 +16,6 @@ from database import initialize_database
 
 
 app = FastAPI()
-API_KEY = os.getenv("API_KEY", "dev-secret-key")
-
 
 initialize_database()
 
@@ -29,7 +26,7 @@ service = URLShortenerService(repository)
 def get_url_shortener_service() -> URLShortenerService:
     return service
 
-def verify_api_key(x_api_key: str | None = Header(default=None)) -> None:
+def verify_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Key")):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 

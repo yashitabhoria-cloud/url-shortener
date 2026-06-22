@@ -466,3 +466,16 @@ def test_redirect_does_not_require_api_key(client):
     )
 
     assert redirect_response.status_code in [307, 308]
+
+def test_protected_route_accepts_api_key_from_environment():
+    response = client.post(
+        "/shorten",
+        json={"url": "https://www.github.com"},
+        headers=API_KEY_HEADERS,
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "short_url" in data
