@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI URL Shortener</title>
+    <link rel="stylesheet" href="/frontend/styles.css">
+</head>
+<body>
+    <main class="container">
+        <section class="hero">
+            <h1>URL Shortener</h1>
+            <p>Create short, trackable links using a FastAPI backend.</p>
+        </section>
+
+        <section class="card">
+            <h2>Create a Short URL</h2>
+
+            <label for="apiKey">API Key</label>
+            <input id="apiKey" type="password" placeholder="Enter API key">
+
+            <label for="longUrl">Long URL</label>
+            <input id="longUrl" type="url" placeholder="https://example.com">
+
+            <label for="customCode">Custom Short Code Optional</label>
+            <input id="customCode" type="text" placeholder="my-link">
+
+            <label for="expiresAt">Expiration Optional</label>
+            <input id="expiresAt" type="datetime-local">
+
+            <button id="shortenBtn">Shorten URL</button>
+
+            <div id="message"></div>
+
+            <div id="result" class="result hidden">
+                <p>Your short URL:</p>
+                <a id="shortUrl" href="#" target="_blank"></a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Check URL Stats</h2>
+
+            <label for="statsCode">Short Code</label>
+            <input id="statsCode" type="text" placeholder="Enter short code">
+
+            <button id="statsBtn">Get Stats</button>
+
+            <pre id="statsResult"></pre>
+        </section>
+    </main>
+
+    <script src="/frontend/script.js"></script>
+</body>
+</html>

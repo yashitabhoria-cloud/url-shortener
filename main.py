@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, Query, Header
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
+
+from fastapi.staticfiles import StaticFiles
 
 from config import API_KEY, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW_SECONDS
 from rate_limiter import RateLimiter
@@ -17,7 +19,7 @@ from database import initialize_database
 
 
 app = FastAPI()
-
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 initialize_database()
 
 repository = SQLiteURLRepository()
@@ -124,6 +126,10 @@ def list_urls(
         limit=limit,
         offset=offset,
     )
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse("frontend/index.html")
 
 @app.get("/{short_code}")
 def redirect_to_original_url(
