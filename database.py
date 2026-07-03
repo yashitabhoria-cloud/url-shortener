@@ -13,7 +13,7 @@ def initialize_database() -> None:
         CREATE TABLE IF NOT EXISTS urls (
             short_code TEXT PRIMARY KEY,
             original_url TEXT NOT NULL,
-            clicks INTEGER NOT NULL DEFAULT 0,
+            click_count INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             expires_at TEXT
         )
@@ -22,6 +22,14 @@ def initialize_database() -> None:
 
     cursor.execute("PRAGMA table_info(urls)")
     existing_columns = [column[1] for column in cursor.fetchall()]
+
+    if "click_count" not in existing_columns:
+        cursor.execute(
+            "ALTER TABLE urls ADD COLUMN click_count INTEGER NOT NULL DEFAULT 0"
+        )
+
+    if "created_at" not in existing_columns:
+        cursor.execute("ALTER TABLE urls ADD COLUMN created_at TEXT")
 
     if "expires_at" not in existing_columns:
         cursor.execute("ALTER TABLE urls ADD COLUMN expires_at TEXT")
